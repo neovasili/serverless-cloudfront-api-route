@@ -1,0 +1,23 @@
+{
+  "name": "serverless-plugin",
+  "version": "1.0.0",
+  "description": "Serverless framework plugin to create specific service API routes in an existing CloudFront distribution",
+  "author": "Juan Manuel Ruiz Fernández",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "aws",
+    "cloudfront",
+    "api-gateway"
+  ],
+  "dependencies": {},
+  "peerDependencies": {
+    "serverless": "2.x"
+  },
+  "engines": {
+    "node": ">=10.0"
+  },
+  "license": "MIT"
+}
