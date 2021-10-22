@@ -1,4 +1,4 @@
-name: Test and Optionally Publish
+name: Test and linters
 on:
   pull_request:
     branches:
