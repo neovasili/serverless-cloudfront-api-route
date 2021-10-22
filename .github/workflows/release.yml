@@ -1,0 +1,35 @@
+name: "Release Workflow"
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Install requirements
+        run: |
+          sudo apt-get install -y jq moreutils
+
+      - name: Get tag name
+        id: get_current_tag
+        run: |
+          TAG=$(git describe --tags --abbrev=0 | tr -d v)
+          echo "Current tag: $TAG"
+          echo ::set-output name=tag::${TAG}
+
+      - name: Update package version
+        run: |
+          jq -r '."version" = "${{ steps.get_current_tag.outputs.tag }}"' package.json | sponge package.json
+
+      - name: Publish package
+        run: |
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.npm_token}}

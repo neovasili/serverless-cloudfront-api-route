@@ -17,4 +17,10 @@ var/
 *.egg
 
 # Serverless directories
+.dev
+.github
+.serverless_plugins
 .serverless
+node_modules
+serverless.yml
+*.py

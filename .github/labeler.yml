@@ -1,0 +1,17 @@
+---
+ci:
+    - .github/*
+    - .github/**/*
+
+documentation:
+    - ./*.md
+    - docs/*
+    - docs/**/*
+
+api:
+    - src/*
+    - src/**/*
+
+dependencies:
+    - package-lock.json
+    - package.json

@@ -1,23 +1,34 @@
 {
-  "name": "serverless-plugin",
+  "name": "serverless-cloudfront-api-route",
   "version": "1.0.0",
   "description": "Serverless framework plugin to create specific service API routes in an existing CloudFront distribution",
-  "author": "Juan Manuel Ruiz Fernández",
-  "main": "index.js",
+  "author": "@neovasili",
+  "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "npx eslint ."
   },
   "keywords": [
     "aws",
     "cloudfront",
     "api-gateway"
   ],
-  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neovasili/serverless-cloudfront-api-route.git"
+  },
   "peerDependencies": {
     "serverless": "2.x"
   },
   "engines": {
     "node": ">=10.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.1"
+  }
 }
