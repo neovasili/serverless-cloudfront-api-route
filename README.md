@@ -17,6 +17,10 @@ There are some **important assumptions** to consider before using this plugin:
 - When you hace multiple routes, they will be ordered prioritizing the ones with more levels first.
 - Routes creation, update or delete can take several minutes depending on the price class of your distribution.
 
+The plugin does not introduce any new command, it's executed when you run `serverless deploy` and/or `serverless remove` commands.
+
+### Serverless deploy
+
 Let's assume that you are starting to use it, so, in order to properly route your service in the CloudFront distribution, the plugin will do the following:
 
 - Create a new distribution origin with the service name as origin ID and using your service stage as origin path.
@@ -63,6 +67,12 @@ x-amz-cf-id: xxxx
 
 {"message": "Hello world!"}
 ```
+
+If you change any value from the plugin parameters configuration, it will update or create a new route if necessary whnever you run again `serverless deploy`.
+
+### Serverless remove
+
+The plugin also automatically deletes current API route configuration from the CloudFront distribution when you run `serverless remove` command.
 
 ## Use guide
 
