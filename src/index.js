@@ -215,8 +215,8 @@ class CloudFrontAPIRoute {
     updatedConfiguration.CacheBehaviors.Items.push(apiBehavior)
     // Prioritize behaviors with longer path patterns
     updatedConfiguration.CacheBehaviors.Items.sort(function (a, b) {
-      if (a.PathPattern.split('/').length() < b.PathPattern.split('/').length()) return -1
-      else if (a.PathPattern.split('/').length() > b.PathPattern.split('/').length()) return 1
+      if (a.PathPattern.split('/').length < b.PathPattern.split('/').length) return -1
+      else if (a.PathPattern.split('/').length > b.PathPattern.split('/').length) return 1
       else return 0
     })
     updatedConfiguration.CacheBehaviors.Quantity++
