@@ -6,7 +6,7 @@ This repository contains a serverless framework plugin to create specific servic
 
 ## Motivation
 
-There is already a great serverless plugin ([serverless-domain-manager](https://github.com/amplify-education/serverless-domain-manager)) with the same purpose, but it's using API Gateway Custom Domains feature, which cloudn't be enough for your use cases; e.g. you want multi-level base paths.
+There is already a great serverless plugin ([serverless-domain-manager](https://github.com/amplify-education/serverless-domain-manager)) with the same purpose, but it's using API Gateway Custom Domains feature, which couldn't be enough for your use cases; e.g. you want multi-level base paths.
 
 This plugin gives you the flexibility of configuring your own CloudFront distribution and after, the plugin will create the proper routes for each service you deploy using it.
 
@@ -28,7 +28,7 @@ Let's assume that you are starting to use it, so, in order to properly route you
 - Create a new distribution origin with the service name as origin ID and using your service stage as origin path.
 - Create a new distribution behaviour pointing to the previously created origin using the base path specified in the parameters.
 
-Once those changes are fully deployed, you should be able to do somthing like this:
+Once those changes are fully deployed, you should be able to do something like this:
 
 ```shell
 curl -i -X GET https://xxxxxx.execute-api.eu-west-1.amazonaws.com/dev/api/v1/hello
@@ -70,7 +70,7 @@ x-amz-cf-id: xxxx
 {"message": "Hello world!"}
 ```
 
-If you change any value from the plugin parameters configuration, it will update or create a new route if necessary whnever you run again `serverless deploy`.
+If you change any value from the plugin parameters configuration, it will update or create a new route if necessary whenever you run again `serverless deploy`.
 
 ### Serverless remove
 
