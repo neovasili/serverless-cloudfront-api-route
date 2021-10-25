@@ -209,12 +209,7 @@ class CloudFrontAPIRoute {
         Items: []
       }
     }
-    if (JSON.stringify(this.provider.sdk.CloudFront.apiVersions).indexOf('2020-05-31') > -1) {
-      behavior.FunctionAssociations = {
-        Quantity: 0,
-        Items: []
-      }
-    }
+
     return behavior
   }
 
