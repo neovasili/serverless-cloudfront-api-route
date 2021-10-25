@@ -1,4 +1,5 @@
 'use strict'
+const chalk = require('chalk')
 
 class CloudFrontAPIRoute {
   constructor (serverless, options) {
@@ -16,44 +17,50 @@ class CloudFrontAPIRoute {
     this.cloudfront = new this.provider.sdk.CloudFront(this.sdkProviderParams)
     this.cloudformation = new this.provider.sdk.CloudFormation(this.sdkProviderParams)
 
-    this.hooks = {
-      'after:deploy:deploy': this.upsertAPIRoute.bind(this),
-      'before:remove:remove': this.deleteAPIRoute.bind(this)
-    }
+    if ('cloudFrontAPIRoute' in serverless.service.custom) {
+      if (('cloudFrontDistributionID' in serverless.service.custom.cloudFrontAPIRoute) && ('basePath' in serverless.service.custom.cloudFrontAPIRoute)) {
+        this.hooks = {
+          'after:deploy:deploy': this.upsertAPIRoute.bind(this),
+          'before:remove:remove': this.deleteAPIRoute.bind(this)
+        }
 
-    // Parameters
-    // Required ones
-    this.distributionId = serverless.service.custom.cloudFrontAPIRoute.cloudFrontDistributionID
-    this.basePath = `${serverless.service.custom.cloudFrontAPIRoute.basePath}/*`
+        // Parameters
+        // Required ones
+        this.distributionId = serverless.service.custom.cloudFrontAPIRoute.cloudFrontDistributionID
+        this.basePath = `${serverless.service.custom.cloudFrontAPIRoute.basePath}/*`
 
-    // Optional
-    this.originConnectionAttempts = 3
-    if ('originConnectionAttempts' in serverless.service.custom.cloudFrontAPIRoute) {
-      this.originConnectionAttempts = serverless.service.custom.cloudFrontAPIRoute.originConnectionAttempts
-    }
-    this.originConnectionTimeout = 10
-    if ('originConnectionTimeout' in serverless.service.custom.cloudFrontAPIRoute) {
-      this.originConnectionTimeout = serverless.service.custom.cloudFrontAPIRoute.originConnectionTimeout
-    }
-    this.originKeepaliveTimeout = 5
-    if ('originKeepaliveTimeout' in serverless.service.custom.cloudFrontAPIRoute) {
-      this.originKeepaliveTimeout = serverless.service.custom.cloudFrontAPIRoute.originKeepaliveTimeout
-    }
-    this.originReadTimeout = 30
-    if ('originReadTimeout' in serverless.service.custom.cloudFrontAPIRoute) {
-      this.originReadTimeout = serverless.service.custom.cloudFrontAPIRoute.originReadTimeout
-    }
-    this.minTTL = 1
-    if ('minTTL' in serverless.service.custom.cloudFrontAPIRoute) {
-      this.minTTL = serverless.service.custom.cloudFrontAPIRoute.minTTL
-    }
-    this.maxTTL = 31536000
-    if ('maxTTL' in serverless.service.custom.cloudFrontAPIRoute) {
-      this.maxTTL = serverless.service.custom.cloudFrontAPIRoute.maxTTL
-    }
-    this.defaultTTL = 86400
-    if ('defaultTTL' in serverless.service.custom.cloudFrontAPIRoute) {
-      this.defaultTTL = serverless.service.custom.cloudFrontAPIRoute.defaultTTL
+        // Optional
+        this.originConnectionAttempts = 3
+        if ('originConnectionAttempts' in serverless.service.custom.cloudFrontAPIRoute) {
+          this.originConnectionAttempts = serverless.service.custom.cloudFrontAPIRoute.originConnectionAttempts
+        }
+        this.originConnectionTimeout = 10
+        if ('originConnectionTimeout' in serverless.service.custom.cloudFrontAPIRoute) {
+          this.originConnectionTimeout = serverless.service.custom.cloudFrontAPIRoute.originConnectionTimeout
+        }
+        this.originKeepaliveTimeout = 5
+        if ('originKeepaliveTimeout' in serverless.service.custom.cloudFrontAPIRoute) {
+          this.originKeepaliveTimeout = serverless.service.custom.cloudFrontAPIRoute.originKeepaliveTimeout
+        }
+        this.originReadTimeout = 30
+        if ('originReadTimeout' in serverless.service.custom.cloudFrontAPIRoute) {
+          this.originReadTimeout = serverless.service.custom.cloudFrontAPIRoute.originReadTimeout
+        }
+        this.minTTL = 1
+        if ('minTTL' in serverless.service.custom.cloudFrontAPIRoute) {
+          this.minTTL = serverless.service.custom.cloudFrontAPIRoute.minTTL
+        }
+        this.maxTTL = 31536000
+        if ('maxTTL' in serverless.service.custom.cloudFrontAPIRoute) {
+          this.maxTTL = serverless.service.custom.cloudFrontAPIRoute.maxTTL
+        }
+        this.defaultTTL = 86400
+        if ('defaultTTL' in serverless.service.custom.cloudFrontAPIRoute) {
+          this.defaultTTL = serverless.service.custom.cloudFrontAPIRoute.defaultTTL
+        }
+      } else {
+        this.serverless.cli.log('CloudFrontAPIRoute plugin -> ' + chalk.red('Missing mandatory parameters'))
+      }
     }
   }
 
@@ -140,7 +147,7 @@ class CloudFrontAPIRoute {
   }
 
   getBehavior () {
-    return {
+    const behavior = {
       TargetOriginId: this.apiOriginId,
       PathPattern: this.basePath,
       ViewerProtocolPolicy: 'redirect-to-https',
@@ -190,10 +197,6 @@ class CloudFrontAPIRoute {
         Quantity: 0,
         Items: []
       },
-      FunctionAssociations: {
-        Quantity: 0,
-        Items: []
-      },
       FieldLevelEncryptionId: '',
       TrustedSigners: {
         Enabled: false,
@@ -206,6 +209,13 @@ class CloudFrontAPIRoute {
         Items: []
       }
     }
+    if (JSON.stringify(this.provider.sdk.CloudFront.apiVersions).indexOf('2020-05-31') > -1) {
+      behavior.FunctionAssociations = {
+        Quantity: 0,
+        Items: []
+      }
+    }
+    return behavior
   }
 
   addAPIBehavior (distributionConfig) {
@@ -215,8 +225,8 @@ class CloudFrontAPIRoute {
     updatedConfiguration.CacheBehaviors.Items.push(apiBehavior)
     // Prioritize behaviors with longer path patterns
     updatedConfiguration.CacheBehaviors.Items.sort(function (a, b) {
-      if (a.PathPattern.split('/').length < b.PathPattern.split('/').length) return -1
-      else if (a.PathPattern.split('/').length > b.PathPattern.split('/').length) return 1
+      if (a.PathPattern.split('/').length > b.PathPattern.split('/').length) return -1
+      else if (a.PathPattern.split('/').length < b.PathPattern.split('/').length) return 1
       else return 0
     })
     updatedConfiguration.CacheBehaviors.Quantity++
