@@ -1,6 +1,6 @@
 # Serverless CloudFront API Route
 
-[![Test and linters](https://github.com/neovasili/serverless-cloudfront-api-route/actions/workflows/test-lint.yml/badge.svg)](https://github.com/neovasili/serverless-cloudfront-api-route/actions/workflows/test-lint.yml) ![npm (tag)](https://img.shields.io/npm/v/@neovasili/serverless-cloudfront-api-route/latest?color=lightgrey)
+[![Test and linters](https://github.com/neovasili/serverless-cloudfront-api-route/actions/workflows/test-lint.yml/badge.svg)](https://github.com/neovasili/serverless-cloudfront-api-route/actions/workflows/test-lint.yml) [![npm version](https://badge.fury.io/js/serverless-cloudfront-api-route.svg)](https://badge.fury.io/js/serverless-cloudfront-api-route)
 
 This repository contains a serverless framework plugin to create specific service API routes in an existing CloudFront distribution. That way you can easily have multiple services created with serverless framework using the same domain on top of the CloudFront distribution and letting CloudFront route each API to the proper service.
 
