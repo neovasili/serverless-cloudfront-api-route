@@ -1,6 +1,6 @@
 {
   "name": "serverless-cloudfront-api-route",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Serverless framework plugin to create specific service API routes in an existing CloudFront distribution",
   "author": "@neovasili",
   "main": "src/index.js",
