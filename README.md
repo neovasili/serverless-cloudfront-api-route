@@ -152,6 +152,6 @@ Then we also have the following optional parameters:
 |`originConnectionTimeout`|10|This will setup the origin connection timeout in seconds.|
 |`originKeepaliveTimeout`|5|This will setup the origin keep alive timeout in seconds.|
 |`originReadTimeout`|30|This will setup the origin read timeout in seconds.|
-|`minTTL`|1|This will setup the caching minimum TTL in seconds.|
+|`minTTL`|0|This will setup the caching minimum TTL in seconds.|
 |`maxTTL`|31536000|This will setup the caching maximum TTL in seconds.|
-|`defaultTTL`|86400|This will setup the caching default TTL in seconds.|
+|`defaultTTL`|1|This will setup the caching default TTL in seconds.|

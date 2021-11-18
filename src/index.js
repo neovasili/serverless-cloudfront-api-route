@@ -46,7 +46,7 @@ class CloudFrontAPIRoute {
         if ('originReadTimeout' in serverless.service.custom.cloudFrontAPIRoute) {
           this.originReadTimeout = serverless.service.custom.cloudFrontAPIRoute.originReadTimeout
         }
-        this.minTTL = 1
+        this.minTTL = 0
         if ('minTTL' in serverless.service.custom.cloudFrontAPIRoute) {
           this.minTTL = serverless.service.custom.cloudFrontAPIRoute.minTTL
         }
@@ -54,7 +54,7 @@ class CloudFrontAPIRoute {
         if ('maxTTL' in serverless.service.custom.cloudFrontAPIRoute) {
           this.maxTTL = serverless.service.custom.cloudFrontAPIRoute.maxTTL
         }
-        this.defaultTTL = 86400
+        this.defaultTTL = 1
         if ('defaultTTL' in serverless.service.custom.cloudFrontAPIRoute) {
           this.defaultTTL = serverless.service.custom.cloudFrontAPIRoute.defaultTTL
         }
@@ -90,6 +90,23 @@ class CloudFrontAPIRoute {
     }
 
     return await this.cloudfront.updateDistribution(params).promise()
+  }
+
+  async createCloudFrontDistributionInvalidation () {
+    const params = {
+      DistributionId: this.distributionId,
+      InvalidationBatch: {
+        CallerReference: (new Date().getTime()).toString(),
+        Paths: {
+          Quantity: 1,
+          Items: [
+            this.basePath
+          ]
+        }
+      }
+    }
+
+    return await this.cloudfront.createInvalidation(params).promise()
   }
 
   getExistingOrigin (distributionConfig) {
@@ -147,6 +164,7 @@ class CloudFrontAPIRoute {
   }
 
   getBehavior () {
+    const forwardHeaders = this.minTTL === 0 ? ['*'] : []
     const behavior = {
       TargetOriginId: this.apiOriginId,
       PathPattern: this.basePath,
@@ -177,16 +195,16 @@ class CloudFrontAPIRoute {
       DefaultTTL: this.defaultTTL,
       ForwardedValues: {
         Cookies: {
-          Forward: 'none',
+          Forward: 'all',
           WhitelistedNames: {
             Quantity: 0,
             Items: []
           }
         },
-        QueryString: false,
+        QueryString: true,
         Headers: {
-          Quantity: 0,
-          Items: []
+          Quantity: forwardHeaders.length,
+          Items: forwardHeaders
         },
         QueryStringCacheKeys: {
           Quantity: 0,
@@ -321,6 +339,7 @@ class CloudFrontAPIRoute {
     const ifMatchVersion = result.ETag
     let updatedConfiguration = distributionConfig
     let update = false
+    let create = false
 
     const existingOrigin = this.getExistingOrigin(distributionConfig)
     const existingBehavior = this.getExistingBehavior(distributionConfig)
@@ -329,7 +348,7 @@ class CloudFrontAPIRoute {
     if (existingOrigin === undefined) {
       this.serverless.cli.log(` -- Add origin '${this.apiOriginId}'`)
       updatedConfiguration = this.addAPIOrigin(updatedConfiguration, apiUrl)
-      update = true
+      create = true
     } else {
       if (this.checkUpdatedOrigin(existingOrigin, apiUrl)) {
         this.serverless.cli.log(` -- Update origin '${this.apiOriginId}'`)
@@ -343,7 +362,7 @@ class CloudFrontAPIRoute {
     if (existingBehavior === undefined) {
       this.serverless.cli.log(` -- Add behavior '${this.basePath}'`)
       updatedConfiguration = this.addAPIBehavior(updatedConfiguration)
-      update = true
+      create = true
     } else {
       if (this.checkUpdatedBehavior(existingBehavior)) {
         this.serverless.cli.log(` -- Update behavior '${this.basePath}'`)
@@ -353,10 +372,14 @@ class CloudFrontAPIRoute {
       }
     }
 
-    if (update) {
+    if (update || create) {
       result = await this.updateCloudFrontDistributionConfiguration(updatedConfiguration, ifMatchVersion)
       const updatedDistribution = result.Distribution
       this.serverless.cli.log(` -- Updating distribution ${updatedDistribution.Id}...`)
+      if (update && this.minTTL !== 0) {
+        result = await this.createCloudFrontDistributionInvalidation()
+        this.serverless.cli.log(` -- Creating invalidation ${result.Invalidation.Id}...`)
+      }
     } else {
       this.serverless.cli.log(' -- No updates pending')
     }
@@ -396,6 +419,10 @@ class CloudFrontAPIRoute {
       result = await this.updateCloudFrontDistributionConfiguration(updatedConfiguration, ifMatchVersion)
       const updatedDistribution = result.Distribution
       this.serverless.cli.log(` -- Updating distribution ${updatedDistribution.Id}...`)
+      if (this.minTTL !== 0) {
+        result = await this.createCloudFrontDistributionInvalidation()
+        this.serverless.cli.log(` -- Creating invalidation ${result.Invalidation.Id}...`)
+      }
     } else {
       this.serverless.cli.log(' -- No updates pending')
     }
