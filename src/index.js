@@ -67,9 +67,9 @@ class CloudFrontAPIRoute {
   async getApiGatewayCachePolicyId () {
     let apiGatewayPolicyId = null
     const params = {
-      Type: 'custom',
+      Type: 'custom'
     }
-    const policies = await this.cloudfront.listCachePolicies(params).promise();
+    const policies = await this.cloudfront.listCachePolicies(params).promise()
 
     policies.CachePolicyList.Items.forEach(policy => {
       if (policy.CachePolicy.CachePolicyConfig.Name === 'ApiGatewayAuthorized') {
@@ -87,7 +87,7 @@ class CloudFrontAPIRoute {
           DefaultTTL: this.defaultTTL,
           ParametersInCacheKeyAndForwardedToOrigin: {
             CookiesConfig: {
-              CookieBehavior: 'none',
+              CookieBehavior: 'none'
             },
             EnableAcceptEncodingGzip: true,
             HeadersConfig: {
@@ -95,18 +95,18 @@ class CloudFrontAPIRoute {
               Headers: {
                 Quantity: 1,
                 Items: [
-                  'Authorization',
-                ],
-              },
+                  'Authorization'
+                ]
+              }
             },
             QueryStringsConfig: {
-              QueryStringBehavior: 'none',
+              QueryStringBehavior: 'none'
             },
-            EnableAcceptEncodingBrotli: true,
+            EnableAcceptEncodingBrotli: true
           }
         }
-      };
-      const response = await this.cloudfront.createCachePolicy(paramsCreate).promise();
+      }
+      const response = await this.cloudfront.createCachePolicy(paramsCreate).promise()
       apiGatewayPolicyId = response.CachePolicy.Id
     }
 
@@ -114,12 +114,12 @@ class CloudFrontAPIRoute {
   }
 
   async deleteApiGatewayCachePolicy () {
-    const apiGatewayPolicyId = await this.getApiGatewayCachePolicyId();
-    const apiGatewayPolicy = await this.cloudfront.getCachePolicy({Id: apiGatewayPolicyId}).promise()
+    const apiGatewayPolicyId = await this.getApiGatewayCachePolicyId()
+    const apiGatewayPolicy = await this.cloudfront.getCachePolicy({ Id: apiGatewayPolicyId }).promise()
 
     console.log(JSON.stringify(apiGatewayPolicy))
     console.log(apiGatewayPolicy.ETag)
-    return await this.cloudfront.deleteCachePolicy({Id: apiGatewayPolicyId, IfMatch: apiGatewayPolicy.ETag}).promise()
+    return await this.cloudfront.deleteCachePolicy({ Id: apiGatewayPolicyId, IfMatch: apiGatewayPolicy.ETag }).promise()
   }
 
   async getApiGatewayUrl () {
