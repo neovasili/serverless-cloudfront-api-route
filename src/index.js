@@ -64,6 +64,64 @@ class CloudFrontAPIRoute {
     }
   }
 
+  async getApiGatewayCachePolicyId () {
+    let apiGatewayPolicyId = null
+    const params = {
+      Type: 'custom',
+    }
+    const policies = await this.cloudfront.listCachePolicies(params).promise();
+
+    policies.CachePolicyList.Items.forEach(policy => {
+      if (policy.CachePolicy.CachePolicyConfig.Name === 'ApiGatewayAuthorized') {
+        apiGatewayPolicyId = policy.CachePolicy.Id
+      }
+    })
+
+    if (apiGatewayPolicyId === null) {
+      const paramsCreate = {
+        CachePolicyConfig: {
+          Name: 'ApiGatewayAuthorized',
+          Comment: 'CloudFront cache policy to use with authorized API Gateways',
+          MinTTL: this.minTTL,
+          MaxTTL: this.maxTTL,
+          DefaultTTL: this.defaultTTL,
+          ParametersInCacheKeyAndForwardedToOrigin: {
+            CookiesConfig: {
+              CookieBehavior: 'none',
+            },
+            EnableAcceptEncodingGzip: true,
+            HeadersConfig: {
+              HeaderBehavior: 'whitelist',
+              Headers: {
+                Quantity: 1,
+                Items: [
+                  'Authorization',
+                ],
+              },
+            },
+            QueryStringsConfig: {
+              QueryStringBehavior: 'none',
+            },
+            EnableAcceptEncodingBrotli: true,
+          }
+        }
+      };
+      const response = await this.cloudfront.createCachePolicy(paramsCreate).promise();
+      apiGatewayPolicyId = response.CachePolicy.Id
+    }
+
+    return apiGatewayPolicyId
+  }
+
+  async deleteApiGatewayCachePolicy () {
+    const apiGatewayPolicyId = await this.getApiGatewayCachePolicyId();
+    const apiGatewayPolicy = await this.cloudfront.getCachePolicy({Id: apiGatewayPolicyId}).promise()
+
+    console.log(JSON.stringify(apiGatewayPolicy))
+    console.log(apiGatewayPolicy.ETag)
+    return await this.cloudfront.deleteCachePolicy({Id: apiGatewayPolicyId, IfMatch: apiGatewayPolicy.ETag}).promise()
+  }
+
   async getApiGatewayUrl () {
     const params = { StackName: this.stackName }
     const result = await this.cloudformation.describeStackResources(params).promise()
@@ -163,8 +221,7 @@ class CloudFrontAPIRoute {
     return updatedConfiguration
   }
 
-  getBehavior () {
-    const forwardHeaders = this.minTTL === 0 ? ['*'] : []
+  getBehavior (apiGatewayPolicyId) {
     const behavior = {
       TargetOriginId: this.apiOriginId,
       PathPattern: this.basePath,
@@ -190,27 +247,7 @@ class CloudFrontAPIRoute {
       },
       SmoothStreaming: false,
       Compress: true,
-      MinTTL: this.minTTL,
-      MaxTTL: this.maxTTL,
-      DefaultTTL: this.defaultTTL,
-      ForwardedValues: {
-        Cookies: {
-          Forward: 'all',
-          WhitelistedNames: {
-            Quantity: 0,
-            Items: []
-          }
-        },
-        QueryString: true,
-        Headers: {
-          Quantity: forwardHeaders.length,
-          Items: forwardHeaders
-        },
-        QueryStringCacheKeys: {
-          Quantity: 0,
-          Items: []
-        }
-      },
+      CachePolicyId: apiGatewayPolicyId,
       LambdaFunctionAssociations: {
         Quantity: 0,
         Items: []
@@ -231,10 +268,10 @@ class CloudFrontAPIRoute {
     return behavior
   }
 
-  addAPIBehavior (distributionConfig) {
+  addAPIBehavior (distributionConfig, apiGatewayPolicyId) {
     const updatedConfiguration = distributionConfig
 
-    const apiBehavior = this.getBehavior()
+    const apiBehavior = this.getBehavior(apiGatewayPolicyId)
     updatedConfiguration.CacheBehaviors.Items.push(apiBehavior)
     // Prioritize behaviors with longer path patterns
     updatedConfiguration.CacheBehaviors.Items.sort(function (a, b) {
@@ -359,15 +396,16 @@ class CloudFrontAPIRoute {
     }
 
     this.serverless.cli.log(' -- Checking behavior')
+    const apiGatewayPolicyId = await this.getApiGatewayCachePolicyId()
     if (existingBehavior === undefined) {
       this.serverless.cli.log(` -- Add behavior '${this.basePath}'`)
-      updatedConfiguration = this.addAPIBehavior(updatedConfiguration)
+      updatedConfiguration = this.addAPIBehavior(updatedConfiguration, apiGatewayPolicyId)
       create = true
     } else {
       if (this.checkUpdatedBehavior(existingBehavior)) {
         this.serverless.cli.log(` -- Update behavior '${this.basePath}'`)
         updatedConfiguration = this.delAPIBehavior(updatedConfiguration, existingBehavior)
-        updatedConfiguration = this.addAPIBehavior(updatedConfiguration)
+        updatedConfiguration = this.addAPIBehavior(updatedConfiguration, apiGatewayPolicyId)
         update = true
       }
     }
@@ -419,6 +457,7 @@ class CloudFrontAPIRoute {
       result = await this.updateCloudFrontDistributionConfiguration(updatedConfiguration, ifMatchVersion)
       const updatedDistribution = result.Distribution
       this.serverless.cli.log(` -- Updating distribution ${updatedDistribution.Id}...`)
+      this.deleteApiGatewayCachePolicy()
       if (this.minTTL !== 0) {
         result = await this.createCloudFrontDistributionInvalidation()
         this.serverless.cli.log(` -- Creating invalidation ${result.Invalidation.Id}...`)
