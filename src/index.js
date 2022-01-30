@@ -115,11 +115,15 @@ class CloudFrontAPIRoute {
 
   async deleteApiGatewayCachePolicy () {
     const apiGatewayPolicyId = await this.getApiGatewayCachePolicyId()
-    const apiGatewayPolicy = await this.cloudfront.getCachePolicy({ Id: apiGatewayPolicyId }).promise()
+    const distributionsUsingIt = await this.cloudfront.listDistributionsByCachePolicyId({
+      CachePolicyId: apiGatewayPolicyId
+    }).promise()
 
-    console.log(JSON.stringify(apiGatewayPolicy))
-    console.log(apiGatewayPolicy.ETag)
-    return await this.cloudfront.deleteCachePolicy({ Id: apiGatewayPolicyId, IfMatch: apiGatewayPolicy.ETag }).promise()
+    if (distributionsUsingIt.DistributionIdList.Quantity === 0) {
+      const apiGatewayPolicy = await this.cloudfront.getCachePolicy({ Id: apiGatewayPolicyId }).promise()
+
+      await this.cloudfront.deleteCachePolicy({ Id: apiGatewayPolicyId, IfMatch: apiGatewayPolicy.ETag }).promise()
+    }
   }
 
   async getApiGatewayUrl () {
@@ -309,22 +313,15 @@ class CloudFrontAPIRoute {
     return false
   }
 
-  checkUpdatedBehavior (existingBehavior) {
+  checkUpdatedBehavior (existingBehavior, apiGatewayPolicyId) {
     const existingPathPattern = existingBehavior.PathPattern
-    const existingMinTTL = existingBehavior.MinTTL
-    const existingMaxTTL = existingBehavior.MaxTTL
-    const existingDefaultTTL = existingBehavior.DefaultTTL
+    const existingCachePolicyId = existingBehavior.CachePolicyId
 
     if (existingPathPattern !== this.basePath) {
       return true
     }
-    if (existingMinTTL !== this.minTTL) {
-      return true
-    }
-    if (existingMaxTTL !== this.maxTTL) {
-      return true
-    }
-    if (existingDefaultTTL !== this.defaultTTL) {
+
+    if (existingCachePolicyId !== apiGatewayPolicyId) {
       return true
     }
     return false
@@ -402,7 +399,7 @@ class CloudFrontAPIRoute {
       updatedConfiguration = this.addAPIBehavior(updatedConfiguration, apiGatewayPolicyId)
       create = true
     } else {
-      if (this.checkUpdatedBehavior(existingBehavior)) {
+      if (this.checkUpdatedBehavior(existingBehavior, apiGatewayPolicyId)) {
         this.serverless.cli.log(` -- Update behavior '${this.basePath}'`)
         updatedConfiguration = this.delAPIBehavior(updatedConfiguration, existingBehavior)
         updatedConfiguration = this.addAPIBehavior(updatedConfiguration, apiGatewayPolicyId)
