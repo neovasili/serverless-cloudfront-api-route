@@ -116,12 +116,12 @@ class CloudFrontAPIRoute {
   async deleteApiGatewayCachePolicy () {
     const apiGatewayPolicyId = await this.getApiGatewayCachePolicyId()
     const distributionsUsingIt = await this.cloudfront.listDistributionsByCachePolicyId({
-      CachePolicyId: apiGatewayPolicyId,
+      CachePolicyId: apiGatewayPolicyId
     }).promise()
 
-    if (distributionsUsingIt.DistributionIdList.Quantity == 0) {
+    if (distributionsUsingIt.DistributionIdList.Quantity === 0) {
       const apiGatewayPolicy = await this.cloudfront.getCachePolicy({ Id: apiGatewayPolicyId }).promise()
-  
+
       await this.cloudfront.deleteCachePolicy({ Id: apiGatewayPolicyId, IfMatch: apiGatewayPolicy.ETag }).promise()
     }
   }
