@@ -126,10 +126,29 @@ class CloudFrontAPIRoute {
     }
   }
 
+  async getAllStackResources () {
+    const resources = []
+
+    let nextToken
+    do {
+      const params = { StackName: this.stackName, NextToken: nextToken }
+      const result = await this.cloudformation.listStackResources(params).promise()
+      for (const resource of result.StackResourceSummaries) {
+        // We only care about ResourceType and PhysicalResourceId.
+        resources.push({
+          ResourceType: resource.ResourceType,
+          PhysicalResourceId: resource.PhysicalResourceId
+        })
+      }
+      nextToken = result.NextToken
+    } while (nextToken)
+
+    return resources
+  }
+
   async getApiGatewayUrl () {
-    const params = { StackName: this.stackName }
-    const result = await this.cloudformation.describeStackResources(params).promise()
-    const apiGatewayResource = result.StackResources.find((element) => {
+    const stackResources = await this.getAllStackResources()
+    const apiGatewayResource = stackResources.find((element) => {
       return element.ResourceType === 'AWS::ApiGateway::RestApi'
     })
 
