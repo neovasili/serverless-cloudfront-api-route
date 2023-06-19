@@ -126,11 +126,10 @@ class CloudFrontAPIRoute {
     }
   }
 
-
   async getAllStackResources () {
-    var resources = []
-    var nextToken;
+    const resources = []
 
+    let nextToken
     do {
       const params = { StackName: this.stackName, NextToken: nextToken }
       const result = await this.cloudformation.listStackResources(params).promise()
@@ -142,7 +141,7 @@ class CloudFrontAPIRoute {
         })
       }
       nextToken = result.NextToken
-    } while(nextToken);
+    } while (nextToken)
 
     return resources
   }
