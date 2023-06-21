@@ -18,7 +18,7 @@
     "url": "https://github.com/neovasili/serverless-cloudfront-api-route.git"
   },
   "peerDependencies": {
-    "serverless": "2.x"
+    "serverless": "3.x"
   },
   "engines": {
     "node": ">=10.0"
